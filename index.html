@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Runway Budget Battle 👗✨</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ========== SPARKLE BACKGROUND ========== -->
+  <div class="sparkle-bg" aria-hidden="true"></div>
+  <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+  <!-- ========== START SCREEN ========== -->
+  <section id="screen-start" class="screen active">
+    <div class="card start-card">
+      <div class="logo-area">
+        <div class="logo-emoji">👗✨</div>
+        <h1 class="title">Runway<br/>Budget<br/>Battle</h1>
+        <p class="subtitle">The fashion math showdown!</p>
+      </div>
+
+      <div class="player-inputs">
+        <div class="input-group">
+          <label for="player1-name">🎀 Player 1 Name</label>
+          <input type="text" id="player1-name" placeholder="e.g. Sophie" maxlength="16" autocomplete="off" />
+        </div>
+        <div class="input-group">
+          <label for="player2-name">⭐ Player 2 Name</label>
+          <input type="text" id="player2-name" placeholder="e.g. Lily" maxlength="16" autocomplete="off" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-xl" id="btn-start">
+        Start Game 🚀
+      </button>
+
+      <div class="high-scores-preview" id="high-scores-preview"></div>
+    </div>
+  </section>
+
+  <!-- ========== THEME SCREEN ========== -->
+  <section id="screen-theme" class="screen">
+    <div class="card theme-card">
+      <p class="screen-label">Today's Fashion Theme</p>
+      <div class="theme-reveal" id="theme-reveal">
+        <div class="theme-emoji" id="theme-emoji">🌟</div>
+        <h2 class="theme-name" id="theme-name">Loading...</h2>
+        <div class="theme-tags" id="theme-tags"></div>
+      </div>
+      <p class="theme-hint">Style your outfits to match these vibes to earn bonus points!</p>
+      <div class="player-order-notice" id="player-order-notice"></div>
+      <button class="btn btn-primary" id="btn-theme-continue">Let's Earn Coins! 💰</button>
+    </div>
+  </section>
+
+  <!-- ========== MATH SCREEN ========== -->
+  <section id="screen-math" class="screen">
+    <div class="math-layout">
+
+      <!-- Header -->
+      <div class="math-header">
+        <div class="math-player-badge" id="math-player-badge">
+          <span id="math-player-emoji">🎀</span>
+          <span id="math-player-name">Player 1</span>
+        </div>
+        <div class="math-progress">
+          <span id="math-q-num">Question 1</span> of 5
+        </div>
+        <div class="coin-display">
+          <span>🪙</span>
+          <span id="math-coins">0</span>
+        </div>
+      </div>
+
+      <!-- Timer Ring -->
+      <div class="timer-ring-wrap" aria-label="Timer">
+        <svg class="timer-ring" viewBox="0 0 60 60">
+          <circle class="timer-ring__track" cx="30" cy="30" r="26" />
+          <circle class="timer-ring__fill" id="timer-ring-fill" cx="30" cy="30" r="26" />
+        </svg>
+        <span class="timer-text" id="timer-text">20</span>
+      </div>
+
+      <!-- Question -->
+      <div class="question-card" id="question-card">
+        <p class="question-text" id="question-text">Loading question...</p>
+      </div>
+
+      <!-- Answer Choices -->
+      <div class="answer-grid" id="answer-grid">
+        <button class="answer-btn" data-index="0"></button>
+        <button class="answer-btn" data-index="1"></button>
+        <button class="answer-btn" data-index="2"></button>
+        <button class="answer-btn" data-index="3"></button>
+      </div>
+
+      <!-- Feedback -->
+      <div class="feedback-banner" id="feedback-banner" aria-live="polite"></div>
+
+      <!-- Score Bar -->
+      <div class="math-score-bar">
+        <div class="pip-row" id="pip-row">
+          <span class="pip" id="pip-0"></span>
+          <span class="pip" id="pip-1"></span>
+          <span class="pip" id="pip-2"></span>
+          <span class="pip" id="pip-3"></span>
+          <span class="pip" id="pip-4"></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== MATH RESULTS SCREEN ========== -->
+  <section id="screen-math-results" class="screen">
+    <div class="card results-card">
+      <h2 class="results-title" id="math-results-title">Round Complete! 🎉</h2>
+      <div class="results-summary" id="math-results-summary"></div>
+      <button class="btn btn-primary" id="btn-math-results-continue">Go Shopping! 🛍️</button>
+    </div>
+  </section>
+
+  <!-- ========== BOUTIQUE SCREEN ========== -->
+  <section id="screen-boutique" class="screen">
+    <div class="boutique-layout">
+
+      <!-- Header -->
+      <div class="boutique-header">
+        <div class="boutique-player-badge" id="boutique-player-badge">
+          <span id="boutique-player-emoji">🎀</span>
+          <span id="boutique-player-name">Player 1</span>
+        </div>
+        <div class="budget-display">
+          <span class="budget-label">Budget</span>
+          <span class="budget-coins" id="budget-coins">🪙 50</span>
+        </div>
+        <div class="theme-mini" id="boutique-theme-mini"></div>
+      </div>
+
+      <!-- Shop Grid -->
+      <div class="shop-categories" id="shop-categories"></div>
+
+      <!-- Footer -->
+      <div class="boutique-footer">
+        <div class="outfit-preview" id="outfit-preview">
+          <p class="outfit-label">Your Outfit 👗</p>
+          <div class="outfit-slots" id="outfit-slots"></div>
+        </div>
+        <button class="btn btn-primary" id="btn-boutique-done">
+          Finalise Look ✅
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== WINNER SCREEN ========== -->
+  <section id="screen-winner" class="screen">
+    <div class="card winner-card">
+      <div class="winner-crown" id="winner-crown">👑</div>
+      <h2 class="winner-name" id="winner-name">Sophie Wins!</h2>
+      <p class="winner-sub">Congratulations, fashion star! 🌟</p>
+
+      <div class="score-table" id="score-table">
+        <!-- Filled dynamically -->
+      </div>
+
+      <div class="high-score-notice" id="high-score-notice"></div>
+
+      <div class="winner-actions">
+        <button class="btn btn-primary btn-xl" id="btn-play-again">Play Again 🔄</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>

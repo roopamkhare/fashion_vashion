@@ -44,6 +44,9 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   color: var(--text-dark);
+  /* Mobile optimization */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ---------- SPARKLE BACKGROUND ---------- */
@@ -183,7 +186,7 @@ body {
   margin-bottom: 0.4rem;
 }
 
-.input-group input {
+.input-group input, .input-group select {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 2.5px solid var(--purple-light);
@@ -196,9 +199,51 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.input-group input:focus {
+.input-group input:focus, .input-group select:focus {
   border-color: var(--pink);
   box-shadow: 0 0 0 3px rgba(255, 133, 194, 0.22);
+}
+
+.network-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.join-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-mid);
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.join-divider::before, .join-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--purple-light);
+}
+
+.join-divider span {
+  padding: 0 10px;
+}
+
+.join-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.join-group input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2.5px solid var(--purple-light);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-family: var(--font-main);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .high-scores-preview {
@@ -206,6 +251,64 @@ body {
   font-size: 0.82rem;
   color: var(--text-mid);
   min-height: 1rem;
+}
+
+/* ============================================================
+   LOBBY SCREEN
+   ============================================================ */
+.lobby-card { text-align: center; }
+
+.lobby-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--text-dark);
+  margin-bottom: 1rem;
+}
+
+.room-code-box {
+  background: var(--purple-light);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.room-code-box h1 {
+  font-size: 3rem;
+  letter-spacing: 4px;
+  color: var(--purple);
+  margin: 0.5rem 0;
+}
+
+.lobby-hint {
+  font-size: 0.9rem;
+  color: var(--text-mid);
+}
+
+.lobby-players {
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-players h3 {
+  font-size: 1.1rem;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--purple-light);
+  padding-bottom: 0.5rem;
+}
+
+#lobby-player-list {
+  list-style: none;
+  padding: 0;
+}
+
+#lobby-player-list li {
+  padding: 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* ============================================================
@@ -273,16 +376,6 @@ body {
   color: var(--text-mid);
   margin-bottom: 1rem;
   line-height: 1.5;
-}
-
-.player-order-notice {
-  background: var(--yellow-light);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 1rem;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #7a5900;
-  margin-bottom: 1.2rem;
 }
 
 /* ============================================================
@@ -416,6 +509,8 @@ body {
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
   box-shadow: 0 3px 12px rgba(160,80,200,0.1);
   min-height: 60px;
+  /* Mobile optimization */
+  touch-action: manipulation;
 }
 
 .answer-btn:hover:not(:disabled) {
@@ -492,41 +587,33 @@ body {
 .pip.wrong   { background: var(--coral); border-color: #8b0000; }
 
 /* ============================================================
-   MATH RESULTS SCREEN
+   WAITING SCREEN
    ============================================================ */
-.results-card { text-align: center; }
+.waiting-card { text-align: center; }
 
-.results-title {
-  font-size: clamp(1.5rem, 6vw, 2rem);
-  font-weight: 900;
-  margin-bottom: 1.4rem;
-  background: linear-gradient(135deg, var(--pink-dark), var(--purple));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.spinner {
+  font-size: 4rem;
+  animation: spin 2s linear infinite;
+  margin-bottom: 1rem;
 }
 
-.results-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  margin-bottom: 1.8rem;
+@keyframes spin {
+  100% { transform: rotate(360deg); }
 }
 
-.result-row {
+.waiting-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.waiting-list li {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--purple-light);
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  background: var(--off-white);
-  border-radius: var(--radius-sm);
-  padding: 0.7rem 1rem;
-  font-size: 0.95rem;
-  font-weight: 700;
 }
-
-.result-row .label { color: var(--text-mid); }
-.result-row .value { color: var(--text-dark); font-size: 1.1rem; }
-.result-row .coin  { color: #c07800; }
 
 /* ============================================================
    BOUTIQUE SCREEN
@@ -626,6 +713,8 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
   box-shadow: 0 2px 8px rgba(160,80,200,0.09);
   position: relative;
+  /* Mobile optimization */
+  touch-action: manipulation;
 }
 
 .shop-item:hover:not(.disabled) {
@@ -860,6 +949,8 @@ body {
   transition: transform 0.18s var(--transition), box-shadow 0.18s;
   outline: none;
   letter-spacing: 0.02em;
+  /* Mobile optimization */
+  touch-action: manipulation;
 }
 
 .btn:active { transform: scale(0.95) !important; }
@@ -873,6 +964,15 @@ body {
 .btn-primary:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 7px 22px rgba(200, 80, 180, 0.42);
+}
+
+.btn-secondary {
+  background: var(--purple-light);
+  color: var(--purple);
+}
+
+.btn-secondary:hover {
+  background: #d8b4fe;
 }
 
 .btn-xl { padding: 1rem 2.4rem; font-size: 1.12rem; width: 100%; }

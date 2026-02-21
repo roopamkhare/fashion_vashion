@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Runway Budget Battle 👗✨</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- PeerJS for P2P Multiplayer -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
@@ -18,25 +20,59 @@
       <div class="logo-area">
         <div class="logo-emoji">👗✨</div>
         <h1 class="title">Runway<br/>Budget<br/>Battle</h1>
-        <p class="subtitle">The fashion math showdown!</p>
+        <p class="subtitle">Multiplayer Fashion Showdown!</p>
       </div>
 
       <div class="player-inputs">
         <div class="input-group">
-          <label for="player1-name">🎀 Player 1 Name</label>
-          <input type="text" id="player1-name" placeholder="e.g. Sophie" maxlength="16" autocomplete="off" />
+          <label for="player-name">🎀 Your Name</label>
+          <input type="text" id="player-name" placeholder="e.g. Sophie" maxlength="16" autocomplete="off" />
         </div>
         <div class="input-group">
-          <label for="player2-name">⭐ Player 2 Name</label>
-          <input type="text" id="player2-name" placeholder="e.g. Lily" maxlength="16" autocomplete="off" />
+          <label for="player-diff">🧠 Math Difficulty</label>
+          <select id="player-diff">
+            <option value="age5">Level 1: Age 5 (Pre-K)</option>
+            <option value="grade4">Level 2: 4th Grade</option>
+          </select>
         </div>
       </div>
 
-      <button class="btn btn-primary btn-xl" id="btn-start">
-        Start Game 🚀
-      </button>
+      <div class="network-actions">
+        <button class="btn btn-primary btn-xl" id="btn-host">
+          Host New Game 🏠
+        </button>
+        
+        <div class="join-divider"><span>OR</span></div>
+        
+        <div class="join-group">
+          <input type="text" id="join-code" placeholder="4-letter code" maxlength="4" autocomplete="off" style="text-transform:uppercase" />
+          <button class="btn btn-secondary" id="btn-join">Join Game 🚀</button>
+        </div>
+      </div>
 
       <div class="high-scores-preview" id="high-scores-preview"></div>
+    </div>
+  </section>
+
+  <!-- ========== LOBBY SCREEN ========== -->
+  <section id="screen-lobby" class="screen">
+    <div class="card lobby-card">
+      <h2 class="lobby-title">Game Lobby 🛋️</h2>
+      <div class="room-code-box">
+        <p>Room Code:</p>
+        <h1 id="lobby-code">----</h1>
+        <p class="lobby-hint">Share this code with your friends!</p>
+      </div>
+      
+      <div class="lobby-players">
+        <h3>Players (<span id="player-count">1</span>/4)</h3>
+        <ul id="lobby-player-list"></ul>
+      </div>
+
+      <button class="btn btn-primary btn-xl hidden" id="btn-start-game">
+        Start Game 🎮
+      </button>
+      <p id="lobby-waiting-msg" class="lobby-hint">Waiting for host to start...</p>
     </div>
   </section>
 
@@ -50,7 +86,6 @@
         <div class="theme-tags" id="theme-tags"></div>
       </div>
       <p class="theme-hint">Style your outfits to match these vibes to earn bonus points!</p>
-      <div class="player-order-notice" id="player-order-notice"></div>
       <button class="btn btn-primary" id="btn-theme-continue">Let's Earn Coins! 💰</button>
     </div>
   </section>
@@ -58,12 +93,10 @@
   <!-- ========== MATH SCREEN ========== -->
   <section id="screen-math" class="screen">
     <div class="math-layout">
-
-      <!-- Header -->
       <div class="math-header">
         <div class="math-player-badge" id="math-player-badge">
           <span id="math-player-emoji">🎀</span>
-          <span id="math-player-name">Player 1</span>
+          <span id="math-player-name">Player</span>
         </div>
         <div class="math-progress">
           <span id="math-q-num">Question 1</span> of 5
@@ -74,7 +107,6 @@
         </div>
       </div>
 
-      <!-- Timer Ring -->
       <div class="timer-ring-wrap" aria-label="Timer">
         <svg class="timer-ring" viewBox="0 0 60 60">
           <circle class="timer-ring__track" cx="30" cy="30" r="26" />
@@ -83,12 +115,10 @@
         <span class="timer-text" id="timer-text">20</span>
       </div>
 
-      <!-- Question -->
       <div class="question-card" id="question-card">
         <p class="question-text" id="question-text">Loading question...</p>
       </div>
 
-      <!-- Answer Choices -->
       <div class="answer-grid" id="answer-grid">
         <button class="answer-btn" data-index="0"></button>
         <button class="answer-btn" data-index="1"></button>
@@ -96,10 +126,8 @@
         <button class="answer-btn" data-index="3"></button>
       </div>
 
-      <!-- Feedback -->
       <div class="feedback-banner" id="feedback-banner" aria-live="polite"></div>
 
-      <!-- Score Bar -->
       <div class="math-score-bar">
         <div class="pip-row" id="pip-row">
           <span class="pip" id="pip-0"></span>
@@ -109,28 +137,26 @@
           <span class="pip" id="pip-4"></span>
         </div>
       </div>
-
     </div>
   </section>
 
-  <!-- ========== MATH RESULTS SCREEN ========== -->
-  <section id="screen-math-results" class="screen">
-    <div class="card results-card">
-      <h2 class="results-title" id="math-results-title">Round Complete! 🎉</h2>
-      <div class="results-summary" id="math-results-summary"></div>
-      <button class="btn btn-primary" id="btn-math-results-continue">Go Shopping! 🛍️</button>
+  <!-- ========== WAITING SCREEN ========== -->
+  <section id="screen-waiting" class="screen">
+    <div class="card waiting-card">
+      <div class="spinner">⏳</div>
+      <h2>Waiting for others...</h2>
+      <p>Hang tight while the other players finish!</p>
+      <ul id="waiting-player-list" class="waiting-list"></ul>
     </div>
   </section>
 
   <!-- ========== BOUTIQUE SCREEN ========== -->
   <section id="screen-boutique" class="screen">
     <div class="boutique-layout">
-
-      <!-- Header -->
       <div class="boutique-header">
         <div class="boutique-player-badge" id="boutique-player-badge">
           <span id="boutique-player-emoji">🎀</span>
-          <span id="boutique-player-name">Player 1</span>
+          <span id="boutique-player-name">Player</span>
         </div>
         <div class="budget-display">
           <span class="budget-label">Budget</span>
@@ -139,10 +165,8 @@
         <div class="theme-mini" id="boutique-theme-mini"></div>
       </div>
 
-      <!-- Shop Grid -->
       <div class="shop-categories" id="shop-categories"></div>
 
-      <!-- Footer -->
       <div class="boutique-footer">
         <div class="outfit-preview" id="outfit-preview">
           <p class="outfit-label">Your Outfit 👗</p>
@@ -152,7 +176,6 @@
           Finalise Look ✅
         </button>
       </div>
-
     </div>
   </section>
 

@@ -1,163 +1,136 @@
 import { state } from '../data/state.js';
-import { CATEGORIES, SHOP_ITEMS, PLAYER_EMOJIS } from '../data/constants.js';
-import { setText, switchScreen } from '../utils/dom.js';
+import { showScreen } from './start.js';
 import { AudioEngine } from '../utils/audio.js';
-import { showWinnerScreen } from './winner.js';
+import { sendToHost } from '../utils/network.js';
+import { SHOP_ITEMS } from '../data/constants.js';
 
-export const startBoutiqueRound = (playerIndex) => {
-  state.currentBoutiquePlayer = playerIndex;
-  state.players[playerIndex].selectedItems = [];
-
-  const p = state.players[playerIndex];
-  setText('boutique-player-name',  p.name);
-  setText('boutique-player-emoji', PLAYER_EMOJIS[playerIndex]);
-
-  const budgetEl = document.getElementById('budget-coins');
-  if (budgetEl) { budgetEl.textContent = `🪙 ${p.coins}`; budgetEl.className = 'budget-coins'; }
-
-  const themeMini = document.getElementById('boutique-theme-mini');
-  if (themeMini) themeMini.textContent = `${state.theme.emoji} ${state.theme.name}`;
-
-  renderShopCategories(playerIndex);
-  renderOutfitPreview(playerIndex);
-
-  document.getElementById('btn-boutique-done').onclick = () => {
-    AudioEngine.click();
-    endBoutiqueRound(playerIndex);
-  };
-
-  switchScreen('screen-boutique');
-};
-
-const getSpentCoins = (playerIndex) =>
-  state.players[playerIndex].selectedItems.reduce((sum, i) => sum + i.price, 0);
-
-const getRemainingCoins = (playerIndex) =>
-  state.players[playerIndex].coins - getSpentCoins(playerIndex);
-
-const renderShopCategories = (playerIndex) => {
-  const container = document.getElementById('shop-categories');
-  if (!container) return;
-  container.innerHTML = '';
-
-  const themeTags = new Set(state.theme.tags);
-
-  CATEGORIES.forEach(cat => {
-    const section = document.createElement('div');
-    section.className = 'shop-category';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = cat.label;
-    section.appendChild(h3);
-
-    const grid = document.createElement('div');
-    grid.className = 'shop-items';
-
-    SHOP_ITEMS
-      .filter(item => item.category === cat.key)
-      .forEach(item => grid.appendChild(buildItemCard(item, playerIndex, themeTags)));
-
-    section.appendChild(grid);
-    container.appendChild(section);
-  });
-};
-
-const buildItemCard = (item, playerIndex, themeTags) => {
-  const p          = state.players[playerIndex];
-  const isSelected = p.selectedItems.some(s => s.id === item.id);
-  const remaining  = getRemainingCoins(playerIndex);
-
-  // If another item in same category is currently selected, those coins would be freed
-  const swapItem   = p.selectedItems.find(s => s.category === item.category && s.id !== item.id);
-  const freed      = swapItem ? swapItem.price : 0;
-  const canAfford  = isSelected || item.price <= remaining + freed;
-
-  const card = document.createElement('div');
-  card.className = 'shop-item';
-  if (isSelected)  card.classList.add('selected');
-  if (!canAfford)  card.classList.add('cant-afford');
-
-  const tagsHTML = item.tags
-    .map(t => `<span class="item-tag ${themeTags.has(t) ? 'match' : ''}">${t}</span>`)
-    .join('');
-
-  card.innerHTML = `
-    <span class="item-emoji">${item.emoji}</span>
-    <div class="item-name">${item.name}</div>
-    <div class="item-price">🪙 ${item.price}</div>
-    <div class="item-tags">${tagsHTML}</div>
-  `;
-
-  card.addEventListener('click', () => {
-    if (!canAfford && !isSelected) { /* can't afford */ return; }
-    handleItemToggle(item, playerIndex);
-  });
-
-  return card;
-};
-
-const handleItemToggle = (item, playerIndex) => {
-  const p   = state.players[playerIndex];
-  const idx = p.selectedItems.findIndex(s => s.id === item.id);
-
-  if (idx >= 0) {
-    // Deselect
-    p.selectedItems.splice(idx, 1);
-    AudioEngine.deselect();
+export const startBoutique = () => {
+  const currentPlayer = state.players[state.currentPlayerIndex];
+  
+  if (currentPlayer.id === state.myId) {
+    showScreen('screen-boutique');
+    updateBoutiqueUI();
   } else {
-    // Swap out same-category item if any, then add
-    const swapIdx = p.selectedItems.findIndex(s => s.category === item.category);
-    if (swapIdx >= 0) p.selectedItems.splice(swapIdx, 1);
-    p.selectedItems.push(item);
+    showScreen('screen-waiting');
+    const waitingList = document.getElementById('waiting-player-list');
+    waitingList.innerHTML = `<li><span>${currentPlayer.name}</span><span>is shopping...</span></li>`;
+  }
+};
+
+const updateBoutiqueUI = () => {
+  const player = state.players[state.currentPlayerIndex];
+  document.getElementById('boutique-player-name').textContent = player.name;
+  document.getElementById('budget-coins').textContent = `🪙 ${player.coins}`;
+  document.getElementById('boutique-theme-mini').textContent = state.currentTheme.name;
+  
+  const categories = ['dress', 'shoes', 'bag', 'accessory'];
+  const container = document.getElementById('shop-categories');
+  container.innerHTML = '';
+  
+  categories.forEach(cat => {
+    const catDiv = document.createElement('div');
+    catDiv.className = 'shop-category';
+    catDiv.innerHTML = `<h3>${cat.toUpperCase()}</h3>`;
+    
+    const itemsDiv = document.createElement('div');
+    itemsDiv.className = 'shop-items';
+    
+    SHOP_ITEMS.filter(i => i.category === cat).forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'shop-item';
+      
+      const isSelected = player.outfit.some(o => o.id === item.id);
+      const canAfford = player.coins >= item.price;
+      
+      if (isSelected) btn.classList.add('selected');
+      if (!canAfford && !isSelected) btn.classList.add('cant-afford');
+      
+      btn.innerHTML = `
+        <span class="item-emoji">${item.emoji}</span>
+        <div class="item-name">${item.name}</div>
+        <div class="item-price">🪙 ${item.price}</div>
+        <div class="item-tags">
+          ${item.tags.map(t => `<span class="item-tag ${state.currentTheme.tags.includes(t) ? 'match' : ''}">${t}</span>`).join('')}
+        </div>
+      `;
+      
+      btn.onclick = () => handlePurchase(item, btn);
+      itemsDiv.appendChild(btn);
+    });
+    
+    catDiv.appendChild(itemsDiv);
+    container.appendChild(catDiv);
+  });
+  
+  updateOutfitSlots();
+  
+  const doneBtn = document.getElementById('btn-boutique-done');
+  doneBtn.onclick = finishShopping;
+};
+
+const handlePurchase = (item, btn) => {
+  const player = state.players[state.currentPlayerIndex];
+  const existingIndex = player.outfit.findIndex(o => o.category === item.category);
+  
+  if (existingIndex > -1) {
+    // Sell back
+    const existing = player.outfit[existingIndex];
+    player.coins += existing.price;
+    player.outfit.splice(existingIndex, 1);
+    AudioEngine.deselect();
+  }
+  
+  if (!player.outfit.some(o => o.id === item.id) && player.coins >= item.price) {
+    // Buy
+    player.coins -= item.price;
+    player.outfit.push(item);
     AudioEngine.select();
   }
-
-  // Refresh budget display
-  const remaining = getRemainingCoins(playerIndex);
-  const budgetEl  = document.getElementById('budget-coins');
-  if (budgetEl) {
-    budgetEl.textContent = `🪙 ${remaining}`;
-    budgetEl.className   = remaining < 8 ? 'budget-coins tight' : 'budget-coins';
-  }
-
-  renderShopCategories(playerIndex);
-  renderOutfitPreview(playerIndex);
+  
+  updateBoutiqueUI();
 };
 
-const renderOutfitPreview = (playerIndex) => {
+const updateOutfitSlots = () => {
+  const player = state.players[state.currentPlayerIndex];
+  const slots = ['dress', 'shoes', 'bag', 'accessory'];
   const container = document.getElementById('outfit-slots');
-  if (!container) return;
   container.innerHTML = '';
-
-  const p = state.players[playerIndex];
-
-  CATEGORIES.forEach(cat => {
-    const selected = p.selectedItems.find(i => i.category === cat.key);
-    const slot     = document.createElement('div');
-    slot.className = selected ? 'outfit-slot filled' : 'outfit-slot';
-
-    if (selected) {
-      slot.innerHTML = `
-        <span class="outfit-slot-emoji">${selected.emoji}</span>
-        <span class="outfit-slot-name">${selected.name}</span>
+  
+  slots.forEach(slot => {
+    const item = player.outfit.find(o => o.category === slot);
+    const div = document.createElement('div');
+    div.className = `outfit-slot ${item ? 'filled' : ''}`;
+    
+    if (item) {
+      div.innerHTML = `
+        <span class="outfit-slot-emoji">${item.emoji}</span>
+        <span class="outfit-slot-name">${item.name}</span>
       `;
     } else {
-      const sample = SHOP_ITEMS.find(i => i.category === cat.key);
-      slot.innerHTML = `
-        <span class="outfit-slot-emoji" style="opacity:0.28">${sample?.emoji ?? '?'}</span>
-        <span class="outfit-slot-name" style="opacity:0.38">${cat.label.split(' ').slice(1).join(' ')}</span>
-      `;
+      div.innerHTML = `<span>${slot}</span>`;
     }
-    container.appendChild(slot);
+    
+    container.appendChild(div);
   });
 };
 
-const endBoutiqueRound = (playerIndex) => {
-  if (playerIndex === 0) {
-    // Player 2's shopping turn
-    startBoutiqueRound(1);
-  } else {
-    // Both shopped — show winner
-    showWinnerScreen();
-  }
+export const finishShopping = () => {
+  const player = state.players[state.currentPlayerIndex];
+  
+  // Calculate score
+  let score = 0;
+  player.outfit.forEach(item => {
+    item.tags.forEach(tag => {
+      if (state.currentTheme.tags.includes(tag)) {
+        score += 10;
+      }
+    });
+  });
+  
+  player.score += score;
+  
+  sendToHost({ type: 'BOUTIQUE_COMPLETE', playerId: state.myId, outfit: player.outfit, score: player.score });
 };
+
+// Attach to global for HTML button
+window.finishShopping = finishShopping;

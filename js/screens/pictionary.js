@@ -121,18 +121,14 @@ const showDrawScreen = (data) => {
 };
 
 const fitCanvas = (canvas) => {
-  const wrap = canvas.parentElement;
-  const rect = wrap.getBoundingClientRect();
-  canvas.width  = Math.round(rect.width  * (window.devicePixelRatio || 1));
-  canvas.height = Math.round(rect.height * (window.devicePixelRatio || 1));
-  const ctx = canvas.getContext('2d');
-  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  // Use a fixed internal resolution — CSS handles display scaling.
+  // Avoids devicePixelRatio issues when the canvas element is cloned.
+  canvas.width  = 600;
+  canvas.height = 450;
 };
 
 const getCanvasPos = (canvas, e) => {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / (window.devicePixelRatio || 1) / rect.width;
-  const scaleY = canvas.height / (window.devicePixelRatio || 1) / rect.height;
   let clientX, clientY;
   if (e.touches) {
     clientX = e.touches[0].clientX;
@@ -141,9 +137,10 @@ const getCanvasPos = (canvas, e) => {
     clientX = e.clientX;
     clientY = e.clientY;
   }
+  // Map CSS click position → internal canvas coordinates
   return {
-    x: (clientX - rect.left) * scaleX,
-    y: (clientY - rect.top)  * scaleY
+    x: (clientX - rect.left) / rect.width  * canvas.width,
+    y: (clientY - rect.top)  / rect.height * canvas.height
   };
 };
 
@@ -256,29 +253,30 @@ const showGuessScreen = (data) => {
   const log = document.getElementById('pic-chat-log');
   log.innerHTML = '<div class="chat-msg system-msg">Game started! Type your guess below.</div>';
 
-  // Guess input
+  // Guess input — clone first to strip old listeners, then bind new ones
   const input = document.getElementById('pic-guess-input');
   const guessBtn = document.getElementById('btn-pic-guess');
-  input.disabled = false;
-  input.value = '';
-  input.focus();
 
-  const submitGuess = () => {
-    const guess = input.value.trim();
-    if (!guess) return;
-    input.value = '';
-
-    sendToHost({ type: 'PIC_GUESS', guess: guess, playerId: state.myId });
-  };
-
-  // Remove old listeners by cloning
   const newInput = input.cloneNode(true);
   input.parentNode.replaceChild(newInput, input);
-  newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitGuess(); });
+  newInput.disabled = false;
+  newInput.value = '';
+  newInput.placeholder = 'Type your guess...';
 
   const newBtn = guessBtn.cloneNode(true);
   guessBtn.parentNode.replaceChild(newBtn, guessBtn);
+
+  // submitGuess must reference the NEW elements (not the removed originals)
+  const submitGuess = () => {
+    const guess = newInput.value.trim();
+    if (!guess) return;
+    newInput.value = '';
+    sendToHost({ type: 'PIC_GUESS', guess: guess, playerId: state.myId });
+  };
+
+  newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitGuess(); });
   newBtn.addEventListener('click', submitGuess);
+  newInput.focus();
 };
 
 /** Receive draw data on the guess screen */

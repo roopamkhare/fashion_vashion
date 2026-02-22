@@ -137,6 +137,7 @@ const handleNetworkData = (data, conn = null) => {
     case 'START_GAME':
       state.players = data.players;
       state.difficulty = data.difficulty;
+      state.currentTheme = data.theme;   // Sync theme to ALL clients
       startThemeReveal(data.theme);
       break;
       

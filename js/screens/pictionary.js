@@ -20,6 +20,7 @@ let currentColor = '#000000';
 let currentSize  = 6;
 let lastX = 0, lastY = 0;
 let turnTimer = null;
+let _guessCleanup = null;   // tear-down for previous guess listeners
 
 // ── Helpers ───────────────────────────────────────────────────
 const pickWord = () => {
@@ -253,30 +254,38 @@ const showGuessScreen = (data) => {
   const log = document.getElementById('pic-chat-log');
   log.innerHTML = '<div class="chat-msg system-msg">Game started! Type your guess below.</div>';
 
-  // Guess input — clone first to strip old listeners, then bind new ones
+  // Tear down any previous guess listeners
+  if (_guessCleanup) { _guessCleanup(); _guessCleanup = null; }
+
   const input = document.getElementById('pic-guess-input');
   const guessBtn = document.getElementById('btn-pic-guess');
+  input.disabled = false;
+  input.value = '';
+  input.placeholder = 'Type your guess...';
 
-  const newInput = input.cloneNode(true);
-  input.parentNode.replaceChild(newInput, input);
-  newInput.disabled = false;
-  newInput.value = '';
-  newInput.placeholder = 'Type your guess...';
-
-  const newBtn = guessBtn.cloneNode(true);
-  guessBtn.parentNode.replaceChild(newBtn, guessBtn);
-
-  // submitGuess must reference the NEW elements (not the removed originals)
-  const submitGuess = () => {
-    const guess = newInput.value.trim();
+  // Always read the LIVE element from the DOM (avoids stale references)
+  const doGuess = () => {
+    const el = document.getElementById('pic-guess-input');
+    if (!el || el.disabled) return;
+    const guess = el.value.trim();
     if (!guess) return;
-    newInput.value = '';
-    sendToHost({ type: 'PIC_GUESS', guess: guess, playerId: state.myId });
+    el.value = '';
+    sendToHost({ type: 'PIC_GUESS', guess, playerId: state.myId });
   };
 
-  newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitGuess(); });
-  newBtn.addEventListener('click', submitGuess);
-  newInput.focus();
+  const onKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); doGuess(); } };
+  const onClick = () => doGuess();
+
+  input.addEventListener('keydown', onKey);
+  guessBtn.addEventListener('click', onClick);
+
+  // Store cleanup so next call can remove these exact listeners
+  _guessCleanup = () => {
+    input.removeEventListener('keydown', onKey);
+    guessBtn.removeEventListener('click', onClick);
+  };
+
+  input.focus();
 };
 
 /** Receive draw data on the guess screen */
@@ -512,40 +521,51 @@ export const showPictionaryWinner = (data) => {
 export const processGuess = (data) => {
   if (!state.isHost) return;
 
-  const { guess, playerId } = data;
-  const player = state.players.find(p => p.id === playerId);
-  if (!player) return;
+  try {
+    const { guess, playerId } = data;
+    const player = state.players.find(p => p.id === playerId);
+    if (!player) { console.warn('[Pictionary] Guess from unknown player:', playerId); return; }
+    if (!state.picWord) { console.warn('[Pictionary] No word set, ignoring guess'); return; }
 
-  const isCorrect = guess.toLowerCase().trim() === state.picWord.toLowerCase().trim();
+    const isCorrect = guess.toLowerCase().trim() === state.picWord.toLowerCase().trim();
 
-  if (isCorrect && !state.picGuessedBy.includes(playerId) && playerId !== state.players[state.picDrawerIndex].id) {
-    // Correct!
-    state.picGuessedBy.push(playerId);
+    if (isCorrect && !state.picGuessedBy.includes(playerId) && playerId !== state.players[state.picDrawerIndex].id) {
+      // Correct!
+      state.picGuessedBy.push(playerId);
 
-    // Points based on speed — faster = more points
-    const elapsed = (Date.now() - state.picTurnStartTime) / 1000;
-    const fraction = Math.max(0, 1 - elapsed / DRAW_TIME);
-    const points = Math.round(GUESS_POINTS_MAX * 0.3 + GUESS_POINTS_MAX * 0.7 * fraction);
-    state.picScores[playerId] = (state.picScores[playerId] || 0) + points;
+      // Points based on speed — faster = more points
+      const elapsed = (Date.now() - state.picTurnStartTime) / 1000;
+      const fraction = Math.max(0, 1 - elapsed / DRAW_TIME);
+      const points = Math.round(GUESS_POINTS_MAX * 0.3 + GUESS_POINTS_MAX * 0.7 * fraction);
+      state.picScores[playerId] = (state.picScores[playerId] || 0) + points;
 
-    broadcast({ type: 'PIC_CORRECT', playerName: player.name, playerId: playerId, points: points });
-    // Also handle locally
-    handleCorrectGuess({ playerName: player.name, playerId: playerId, points: points });
+      broadcast({ type: 'PIC_CORRECT', playerName: player.name, playerId: playerId, points: points });
+      // Also handle locally
+      handleCorrectGuess({ playerName: player.name, playerId: playerId, points: points });
 
-    // If all non-drawers have guessed, end turn
-    const nonDrawers = state.players.filter(p => p.id !== state.players[state.picDrawerIndex].id);
-    if (state.picGuessedBy.length >= nonDrawers.length) {
-      setTimeout(() => endTurn(true), 1500);
+      // If all non-drawers have guessed, end turn
+      const nonDrawers = state.players.filter(p => p.id !== state.players[state.picDrawerIndex].id);
+      if (state.picGuessedBy.length >= nonDrawers.length) {
+        setTimeout(() => endTurn(true), 1500);
+      }
+    } else {
+      // Wrong — broadcast the guess to everyone (chat)
+      broadcast({ type: 'PIC_CHAT', playerName: player.name, text: guess });
+      addChatMessage(player.name, guess);
     }
-  } else {
-    // Wrong — broadcast the guess to everyone (chat)
-    broadcast({ type: 'PIC_CHAT', playerName: player.name, text: guess });
-    addChatMessage(player.name, guess);
+  } catch (err) {
+    console.error('[Pictionary] Error processing guess:', err);
   }
 };
 
 export const handleCorrectGuess = (data) => {
   AudioEngine.correct();
+
+  // Sync picGuessedBy on ALL clients (not just host)
+  if (!state.picGuessedBy.includes(data.playerId)) {
+    state.picGuessedBy.push(data.playerId);
+  }
+
   addChatMessage(data.playerName, '', 'correct-msg');
 
   // Update guessers bar on draw screen

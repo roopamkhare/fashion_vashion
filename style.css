@@ -983,17 +983,338 @@ body {
 .hidden { display: none !important; }
 
 /* ============================================================
+   PICTIONARY — DRAWING SCREEN
+   ============================================================ */
+.pic-draw-layout,
+.pic-guess-layout {
+  width: 100%;
+  max-width: 650px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem;
+}
+
+.pic-draw-header,
+.pic-guess-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 1rem;
+  box-shadow: var(--card-shadow);
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pic-round-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pic-round-info span:first-child {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-mid);
+}
+
+.pic-drawer-badge {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--pink-dark);
+}
+
+.pic-drawer-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.pic-word-display {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  background: var(--yellow-light);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+}
+
+.pic-word-display strong {
+  color: var(--pink-dark);
+  font-size: 1.15rem;
+  text-transform: capitalize;
+}
+
+.pic-word-hint {
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--text-dark);
+  background: var(--yellow-light);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  font-family: monospace;
+}
+
+.pic-timer-display {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--text-dark);
+  background: var(--purple-light);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+}
+
+.pic-timer-display.urgent { color: var(--coral); background: #ffe0e0; }
+
+/* Canvas Wrapper */
+.pic-canvas-wrap {
+  width: 100%;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 4/3;
+}
+
+.pic-canvas-wrap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;       /* critical for mobile drawing */
+}
+
+#pic-canvas-view {
+  cursor: default;
+}
+
+/* Toolbar */
+.pic-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.8rem;
+  box-shadow: var(--card-shadow);
+}
+
+.pic-colors {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.color-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  touch-action: manipulation;
+}
+
+.color-btn:hover { transform: scale(1.15); }
+.color-btn.active { border-color: var(--text-dark); transform: scale(1.2); }
+
+.pic-sizes {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.size-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2.5px solid var(--purple-light);
+  background: var(--white);
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+  touch-action: manipulation;
+}
+
+.size-btn.active { border-color: var(--purple); background: var(--purple-light); }
+
+.pic-clear-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.pic-guessers-bar {
+  width: 100%;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-mid);
+  text-align: center;
+  box-shadow: var(--card-shadow);
+}
+
+.pic-guessers-label { font-weight: 700; }
+
+/* ============================================================
+   PICTIONARY — GUESS SCREEN
+   ============================================================ */
+.pic-guess-input-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pic-chat-log {
+  width: 100%;
+  max-height: 130px;
+  overflow-y: auto;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.8rem;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chat-msg {
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  line-height: 1.4;
+}
+
+.chat-msg .chat-name {
+  font-weight: 800;
+  color: var(--purple);
+}
+
+.chat-msg.correct-msg {
+  color: #1a6b3a;
+  font-weight: 700;
+  background: #d2f8d2;
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.5rem;
+}
+
+.chat-msg.system-msg {
+  color: var(--text-mid);
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+.pic-guess-form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.pic-guess-form input {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: 2.5px solid var(--purple-light);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-family: var(--font-main);
+  color: var(--text-dark);
+  background: var(--off-white);
+  outline: none;
+}
+
+.pic-guess-form input:focus {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 3px rgba(255, 133, 194, 0.22);
+}
+
+.pic-guess-form input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   PICTIONARY — REVEAL / BETWEEN TURNS
+   ============================================================ */
+.pic-reveal-card { text-align: center; max-width: 480px; }
+
+.pic-reveal-emoji {
+  font-size: 3.5rem;
+  display: block;
+  margin-bottom: 0.4rem;
+  animation: pop-in 0.5s var(--transition) both;
+}
+
+.pic-reveal-word {
+  font-size: 1.3rem;
+  color: var(--text-dark);
+  margin-bottom: 1.2rem;
+}
+
+.pic-reveal-word strong {
+  color: var(--pink-dark);
+  font-size: 1.6rem;
+  text-transform: capitalize;
+}
+
+.pic-reveal-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.2rem;
+}
+
+.pic-reveal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--off-white);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.8rem;
+  font-weight: 700;
+  animation: slide-up 0.3s var(--transition) both;
+}
+
+.pic-reveal-row .pts {
+  color: var(--pink-dark);
+  font-size: 1.05rem;
+}
+
+.pic-reveal-next {
+  font-size: 0.95rem;
+  color: var(--text-mid);
+  font-weight: 700;
+}
+
+/* ============================================================
    RESPONSIVE — TABLET / IPAD
    ============================================================ */
 @media (min-width: 600px) {
   .card { padding: 2.5rem 2.8rem; }
   .boutique-layout { padding: 1rem; }
   .shop-items { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .pic-draw-layout, .pic-guess-layout { max-width: 700px; }
 }
 
 @media (min-width: 900px) {
   .boutique-layout { max-width: 720px; }
   .shop-items { grid-template-columns: repeat(4, 1fr); }
+  .pic-draw-layout, .pic-guess-layout { max-width: 800px; }
 }
 
 /* Small phones */
@@ -1001,4 +1322,6 @@ body {
   .card { padding: 1.4rem 1.2rem; }
   .title { font-size: 2rem; }
   .answer-grid { grid-template-columns: 1fr; }
+  .color-btn { width: 24px; height: 24px; }
+  .pic-word-hint { font-size: 1rem; letter-spacing: 2px; }
 }

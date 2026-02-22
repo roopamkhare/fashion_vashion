@@ -5,22 +5,36 @@ import { THEMES } from '../data/constants.js';
 import { randInt } from '../utils/math.js';
 import { HighScores } from '../components/highScores.js';
 import { switchScreen } from '../utils/dom.js';
+import { startPictionaryGame } from './pictionary.js';
 
 export const initStartScreen = () => {
   const hostBtn = document.getElementById('btn-host');
   const joinBtn = document.getElementById('btn-join');
   const startGameBtn = document.getElementById('btn-start-game');
+  const gameModeSelect = document.getElementById('game-mode');
+  const diffGroup = document.getElementById('diff-group');
   
   const scores = HighScores.load();
   const preview = document.getElementById('high-scores-preview');
   if (scores.length > 0) {
     preview.textContent = `🏆 Top Score: ${scores[0].name} (${scores[0].score})`;
   }
+
+  // Game mode toggle — show/hide difficulty for fashion only
+  if (gameModeSelect) {
+    gameModeSelect.addEventListener('change', () => {
+      state.gameMode = gameModeSelect.value;
+      if (diffGroup) {
+        diffGroup.style.display = gameModeSelect.value === 'fashion' ? '' : 'none';
+      }
+    });
+  }
   
   hostBtn.addEventListener('click', () => {
     AudioEngine.click();
     const name = document.getElementById('player-name').value.trim() || 'Host';
     const diff = document.getElementById('player-diff').value;
+    state.gameMode = gameModeSelect ? gameModeSelect.value : 'fashion';
     
     // Generate a random 4-char code for the host ID
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -54,14 +68,26 @@ export const initStartScreen = () => {
       alert('Need at least 2 players to start!');
       return;
     }
-    
-    const theme = THEMES[randInt(0, THEMES.length - 1)];
-    state.currentTheme = theme;
-    
-    broadcast({ type: 'START_GAME', players: state.players, theme: theme, difficulty: state.difficulty });
-    
-    // Host starts too
-    import('./theme.js').then(m => m.startThemeReveal(theme));
+
+    if (state.gameMode === 'pictionary') {
+      // ── Pictionary flow ──
+      broadcast({
+        type: 'PIC_START_GAME',
+        players: state.players,
+        difficulty: state.difficulty,
+        gameMode: 'pictionary'
+      });
+      startPictionaryGame();
+    } else {
+      // ── Fashion flow ──
+      const theme = THEMES[randInt(0, THEMES.length - 1)];
+      state.currentTheme = theme;
+      
+      broadcast({ type: 'START_GAME', players: state.players, theme: theme, difficulty: state.difficulty });
+      
+      // Host starts too
+      import('./theme.js').then(m => m.startThemeReveal(theme));
+    }
   });
 };
 

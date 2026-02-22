@@ -5,6 +5,11 @@ import { startThemeReveal } from '../screens/theme.js';
 import { startMathRound } from '../screens/math.js';
 import { startBoutique } from '../screens/boutique.js';
 import { showWinner } from '../screens/winner.js';
+import {
+  handleTurnStart, handleDrawData, handleClearCanvas,
+  processGuess, handleCorrectGuess, handleTurnEnd,
+  showPictionaryWinner, addChatMessage, updateHint, stopTurnTimer
+} from '../screens/pictionary.js';
 
 // Initialize PeerJS
 export const initPeer = (onOpen, requestedId = null) => {
@@ -202,6 +207,59 @@ const handleNetworkData = (data, conn = null) => {
     case 'GAME_OVER':
       state.players = data.players;
       showWinner();
+      break;
+
+    // ── Pictionary messages ──────────────────────────────
+    case 'PIC_START_GAME':
+      state.gameMode = 'pictionary';
+      state.players = data.players;
+      state.difficulty = data.difficulty || state.difficulty;
+      // Only host calls startNextTurn via startPictionaryGame; clients wait for TURN_START
+      break;
+
+    case 'PIC_TURN_START':
+      handleTurnStart(data);
+      break;
+
+    case 'PIC_DRAW':
+      if (state.isHost) {
+        // Relay draw data to all OTHER clients
+        state.connections.forEach(conn => conn.send(data));
+      }
+      handleDrawData(data);
+      break;
+
+    case 'PIC_CLEAR':
+      if (state.isHost) {
+        state.connections.forEach(conn => conn.send(data));
+      }
+      handleClearCanvas();
+      break;
+
+    case 'PIC_GUESS':
+      if (state.isHost) {
+        processGuess(data);
+      }
+      break;
+
+    case 'PIC_CORRECT':
+      handleCorrectGuess(data);
+      break;
+
+    case 'PIC_CHAT':
+      addChatMessage(data.playerName, data.text);
+      break;
+
+    case 'PIC_HINT':
+      updateHint(data.hint);
+      break;
+
+    case 'PIC_TURN_END':
+      handleTurnEnd(data);
+      break;
+
+    case 'PIC_GAME_OVER':
+      showPictionaryWinner(data);
       break;
   }
 };

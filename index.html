@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Runway Budget Battle 👗✨</title>
+  <title>Game Night — Runway Battle & Pictionary 🎮</title>
   <link rel="stylesheet" href="style.css" />
   <!-- PeerJS for P2P Multiplayer -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -18,9 +18,9 @@
   <section id="screen-start" class="screen active">
     <div class="card start-card">
       <div class="logo-area">
-        <div class="logo-emoji">👗✨</div>
-        <h1 class="title">Runway<br/>Budget<br/>Battle</h1>
-        <p class="subtitle">Multiplayer Fashion Showdown!</p>
+        <div class="logo-emoji" id="logo-emoji">🎮✨</div>
+        <h1 class="title" id="main-title">Game<br/>Night</h1>
+        <p class="subtitle">Play together from anywhere!</p>
       </div>
 
       <div class="player-inputs">
@@ -29,6 +29,13 @@
           <input type="text" id="player-name" placeholder="e.g. Sophie" maxlength="16" autocomplete="off" />
         </div>
         <div class="input-group">
+          <label for="game-mode">🎯 Game Mode</label>
+          <select id="game-mode">
+            <option value="fashion">👗 Runway Budget Battle</option>
+            <option value="pictionary">🎨 Pictionary</option>
+          </select>
+        </div>
+        <div class="input-group fashion-only" id="diff-group">
           <label for="player-diff">🧠 Math Difficulty</label>
           <select id="player-diff">
             <option value="age5">Level 1: Age 5 (Pre-K)</option>
@@ -194,6 +201,115 @@
 
       <div class="winner-actions">
         <button class="btn btn-primary btn-xl" id="btn-play-again">Play Again 🔄</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================
+       PICTIONARY SCREENS
+       ================================================================ -->
+
+  <!-- ========== PICTIONARY: DRAWING SCREEN (for the drawer) ========== -->
+  <section id="screen-pic-draw" class="screen">
+    <div class="pic-draw-layout">
+      <div class="pic-draw-header">
+        <div class="pic-round-info">
+          <span id="pic-round-label">Round 1</span>
+          <span class="pic-drawer-badge">🎨 You're drawing!</span>
+        </div>
+        <div class="pic-word-display">
+          Draw: <strong id="pic-word">______</strong>
+        </div>
+        <div class="pic-timer-display">
+          <span>⏱️</span>
+          <span id="pic-draw-timer">60</span>
+        </div>
+      </div>
+
+      <div class="pic-canvas-wrap">
+        <canvas id="pic-canvas" width="600" height="450"></canvas>
+      </div>
+
+      <div class="pic-toolbar">
+        <div class="pic-colors">
+          <button class="color-btn active" data-color="#000000" style="background:#000000" title="Black"></button>
+          <button class="color-btn" data-color="#d63384" style="background:#d63384" title="Pink"></button>
+          <button class="color-btn" data-color="#ff6b6b" style="background:#ff6b6b" title="Red"></button>
+          <button class="color-btn" data-color="#ff922b" style="background:#ff922b" title="Orange"></button>
+          <button class="color-btn" data-color="#fcc419" style="background:#fcc419" title="Yellow"></button>
+          <button class="color-btn" data-color="#51cf66" style="background:#51cf66" title="Green"></button>
+          <button class="color-btn" data-color="#339af0" style="background:#339af0" title="Blue"></button>
+          <button class="color-btn" data-color="#7950f2" style="background:#7950f2" title="Purple"></button>
+          <button class="color-btn" data-color="#a0522d" style="background:#a0522d" title="Brown"></button>
+          <button class="color-btn eraser" data-color="#FFFFFF" style="background:#ffffff; border:2px solid #ccc" title="Eraser"></button>
+        </div>
+        <div class="pic-sizes">
+          <button class="size-btn" data-size="3" title="Thin">·</button>
+          <button class="size-btn active" data-size="6" title="Medium">●</button>
+          <button class="size-btn" data-size="12" title="Thick">⬤</button>
+        </div>
+        <button class="btn btn-secondary pic-clear-btn" id="btn-pic-clear">🗑️ Clear</button>
+      </div>
+
+      <div class="pic-guessers-bar">
+        <span class="pic-guessers-label">Guessed correctly:</span>
+        <span id="pic-guessers-list">—</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PICTIONARY: GUESS SCREEN (for non-drawers) ========== -->
+  <section id="screen-pic-guess" class="screen">
+    <div class="pic-guess-layout">
+      <div class="pic-guess-header">
+        <div class="pic-round-info">
+          <span id="pic-guess-round-label">Round 1</span>
+          <span class="pic-drawer-name" id="pic-drawer-name">🎨 Sophie is drawing</span>
+        </div>
+        <div class="pic-word-hint" id="pic-word-hint">_ _ _ _ _</div>
+        <div class="pic-timer-display">
+          <span>⏱️</span>
+          <span id="pic-guess-timer">60</span>
+        </div>
+      </div>
+
+      <div class="pic-canvas-wrap">
+        <canvas id="pic-canvas-view" width="600" height="450"></canvas>
+      </div>
+
+      <div class="pic-guess-input-area">
+        <div class="pic-chat-log" id="pic-chat-log">
+          <!-- guesses appear here -->
+        </div>
+        <div class="pic-guess-form">
+          <input type="text" id="pic-guess-input" placeholder="Type your guess..." maxlength="40" autocomplete="off" />
+          <button class="btn btn-primary" id="btn-pic-guess">Guess!</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PICTIONARY: TURN RESULT (shown between turns) ========== -->
+  <section id="screen-pic-reveal" class="screen">
+    <div class="card pic-reveal-card">
+      <div class="pic-reveal-emoji" id="pic-reveal-emoji">🎉</div>
+      <h2 class="pic-reveal-word">The word was: <strong id="pic-reveal-word">cat</strong></h2>
+      <div class="pic-reveal-scores" id="pic-reveal-scores">
+        <!-- turn scoreboard -->
+      </div>
+      <p class="pic-reveal-next" id="pic-reveal-next">Next up: Sophie draws!</p>
+    </div>
+  </section>
+
+  <!-- ========== PICTIONARY: FINAL SCORES ========== -->
+  <section id="screen-pic-winner" class="screen">
+    <div class="card winner-card">
+      <div class="winner-crown">👑</div>
+      <h2 class="winner-name" id="pic-winner-name">Sophie Wins!</h2>
+      <p class="winner-sub">Master of the brush! 🎨</p>
+      <div class="score-table" id="pic-score-table"></div>
+      <div class="winner-actions">
+        <button class="btn btn-primary btn-xl" id="btn-pic-play-again">Play Again 🔄</button>
       </div>
     </div>
   </section>

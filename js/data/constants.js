@@ -44,3 +44,42 @@ export const MAX_QUESTIONS     = 5;
 export const COINS_PER_CORRECT = 10;
 export const QUESTION_TIME     = 20;           // seconds
 export const TIMER_CIRCUMF     = 2 * Math.PI * 26;   // SVG circle r=26
+
+// ============================================================
+// PICTIONARY WORD LISTS
+// ============================================================
+export const PICTIONARY_WORDS_EASY = [
+  // Animals
+  'cat', 'dog', 'fish', 'bird', 'frog', 'duck', 'pig', 'cow', 'bee', 'ant',
+  'snake', 'bear', 'lion', 'horse', 'bunny', 'mouse', 'shark', 'whale', 'owl', 'bat',
+  // Food
+  'pizza', 'cake', 'apple', 'banana', 'cookie', 'ice cream', 'egg', 'candy', 'pie', 'bread',
+  'donut', 'cupcake', 'popcorn', 'cheese', 'grapes', 'cherry', 'corn', 'carrot', 'taco', 'hotdog',
+  // Objects
+  'sun', 'moon', 'star', 'tree', 'flower', 'house', 'car', 'boat', 'ball', 'hat',
+  'cloud', 'rain', 'rainbow', 'heart', 'book', 'chair', 'lamp', 'cup', 'key', 'shoe',
+  // Actions / scenes
+  'swim', 'jump', 'sleep', 'cry', 'smile', 'wave', 'dance', 'sing', 'run', 'fly',
+];
+
+export const PICTIONARY_WORDS_HARD = [
+  // Animals
+  'penguin', 'octopus', 'dinosaur', 'butterfly', 'caterpillar', 'jellyfish', 'flamingo', 'parrot',
+  'chameleon', 'scorpion', 'hedgehog', 'dolphin', 'seahorse', 'gorilla', 'kangaroo',
+  // Food
+  'spaghetti', 'pancakes', 'watermelon', 'pineapple', 'croissant', 'burrito', 'sandwich',
+  'milkshake', 'gingerbread', 'lollipop', 'marshmallow', 'french fries', 'sushi',
+  // Objects & places
+  'volcano', 'castle', 'lighthouse', 'telescope', 'treasure chest', 'spaceship', 'parachute',
+  'umbrella', 'skateboard', 'trampoline', 'compass', 'binoculars', 'snowflake', 'diamond',
+  'boomerang', 'campfire', 'tent', 'igloo', 'windmill', 'bridge', 'fountain',
+  // Concepts / harder
+  'magician', 'pirate', 'astronaut', 'mermaid', 'robot', 'superhero', 'ninja',
+  'rainbow', 'tornado', 'earthquake', 'shadow', 'thunder', 'sunrise', 'sunset',
+  'birthday party', 'roller coaster', 'hot air balloon', 'treasure map',
+];
+
+export const DRAW_TIME        = 60;            // seconds per drawing turn
+export const PICTIONARY_ROUNDS = 2;            // each player draws this many times
+export const GUESS_POINTS_MAX = 100;           // points for fastest guesser
+export const DRAWER_POINTS    = 50;            // points drawer gets if someone guesses

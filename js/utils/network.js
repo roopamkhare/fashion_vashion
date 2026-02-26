@@ -6,7 +6,7 @@ import { startMathRound } from '../screens/math.js';
 import { startBoutique } from '../screens/boutique.js';
 import { showWinner } from '../screens/winner.js';
 import {
-  handleTurnStart, handleDrawData, handleClearCanvas,
+  handleTurnStart, handleDrawData, handleClearCanvas, handleUndo,
   processGuess, handleCorrectGuess, handleTurnEnd,
   showPictionaryWinner, addChatMessage, updateHint, stopTurnTimer
 } from '../screens/pictionary.js';
@@ -237,6 +237,13 @@ const handleNetworkData = (data, conn = null) => {
       handleClearCanvas();
       break;
 
+    case 'PIC_UNDO':
+      if (state.isHost) {
+        state.connections.forEach(conn => conn.send(data));
+      }
+      handleUndo(data);
+      break;
+
     case 'PIC_GUESS':
       if (state.isHost) {
         processGuess(data);
@@ -248,7 +255,7 @@ const handleNetworkData = (data, conn = null) => {
       break;
 
     case 'PIC_CHAT':
-      addChatMessage(data.playerName, data.text);
+      addChatMessage(data.playerName, data.text, data.close ? 'close-msg' : '');
       break;
 
     case 'PIC_HINT':

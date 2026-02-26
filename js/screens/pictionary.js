@@ -4,7 +4,8 @@
 import { state, resetPictionaryState } from '../data/state.js';
 import {
   PICTIONARY_WORDS_EASY, PICTIONARY_WORDS_HARD,
-  DRAW_TIME, PICTIONARY_ROUNDS, GUESS_POINTS_MAX, DRAWER_POINTS
+  DRAW_TIME, PICTIONARY_ROUNDS, GUESS_POINTS_MAX, DRAWER_POINTS,
+  WORD_CATEGORY
 } from '../data/constants.js';
 import { showScreen } from './start.js';
 import { AudioEngine } from '../utils/audio.js';
@@ -21,6 +22,23 @@ let currentSize  = 6;
 let lastX = 0, lastY = 0;
 let turnTimer = null;
 let _guessCleanup = null;   // tear-down for previous guess listeners
+
+// ── Rainbow brush ─────────────────────────────────────────────
+let isRainbow = false;
+let rainbowHue = 0;
+
+// ── Undo state ────────────────────────────────────────────────
+let undoDataUrl = null;   // snapshot taken at the start of each stroke
+
+// ── Fun celebration messages ──────────────────────────────────
+const CORRECT_MSGS = [
+  (name) => `🎉 ${name} got it!`,
+  (name) => `⭐ Amazing! ${name} figured it out!`,
+  (name) => `🔥 ${name} is on fire!`,
+  (name) => `🦄 YES! ${name} nailed it!`,
+  (name) => `🌟 ${name} is a genius!`,
+  (name) => `🎊 Woohoo! ${name} guessed it!`,
+];
 
 // ── Helpers ───────────────────────────────────────────────────
 const pickWord = () => {
@@ -89,7 +107,9 @@ export const handleTurnStart = (data) => {
   } else {
     showGuessScreen(data);
   }
-  startTurnTimer(amDrawer);
+
+  // Show 3-2-1 countdown then start the timer
+  showCountdown(amDrawer, () => startTurnTimer(amDrawer));
 };
 
 // ── Draw Screen ───────────────────────────────────────────────
@@ -99,7 +119,11 @@ const showDrawScreen = (data) => {
 
   document.getElementById('pic-round-label').textContent = `Round ${data.round}`;
   document.getElementById('pic-word').textContent = data.word;
-  document.getElementById('pic-guessers-list').textContent = '—';
+  document.getElementById('pic-guessers-list').innerHTML = '';
+
+  // Show word category hint to the drawer
+  const category = WORD_CATEGORY[data.word] || '🌈 Object';
+  document.getElementById('pic-word-category').textContent = category;
 
   // Init canvas
   const canvas = document.getElementById('pic-canvas');
@@ -112,10 +136,14 @@ const showDrawScreen = (data) => {
 
   currentColor = '#000000';
   currentSize = 6;
+  isRainbow = false;
+  undoDataUrl = null;
 
   // Reset toolbar active states
   document.querySelectorAll('.color-btn').forEach(b => b.classList.toggle('active', b.dataset.color === '#000000'));
   document.querySelectorAll('.size-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.size) === 6));
+  const rainbowBtn = document.getElementById('btn-pic-rainbow');
+  if (rainbowBtn) rainbowBtn.classList.remove('active');
 
   bindDrawEvents(canvas);
   bindToolbar();
@@ -159,16 +187,26 @@ const bindDrawEvents = (canvas) => {
     const pos = getCanvasPos(clone, e);
     lastX = pos.x;
     lastY = pos.y;
+    // Snapshot before this stroke so undo can revert to it
+    undoDataUrl = clone.toDataURL('image/jpeg', 0.5);
   };
 
   const moveDraw = (e) => {
     if (!drawing) return;
     e.preventDefault();
     const pos = getCanvasPos(clone, e);
-    drawLine(drawCtx, lastX, lastY, pos.x, pos.y, currentColor, currentSize);
-    
+
+    // Rainbow brush: cycle hue on every segment
+    let strokeColor = currentColor;
+    if (isRainbow) {
+      rainbowHue = (rainbowHue + 3) % 360;
+      strokeColor = `hsl(${rainbowHue}, 90%, 50%)`;
+    }
+
+    drawLine(drawCtx, lastX, lastY, pos.x, pos.y, strokeColor, currentSize);
+
     // Broadcast the stroke
-    const msg = { type: 'PIC_DRAW', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor, size: currentSize };
+    const msg = { type: 'PIC_DRAW', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: strokeColor, size: currentSize };
     if (state.isHost) {
       broadcast(msg);
     } else {
@@ -205,6 +243,8 @@ const bindToolbar = () => {
   document.querySelectorAll('.color-btn').forEach(btn => {
     btn.onclick = () => {
       currentColor = btn.dataset.color;
+      isRainbow = false;
+      document.getElementById('btn-pic-rainbow')?.classList.remove('active');
       document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     };
@@ -219,12 +259,45 @@ const bindToolbar = () => {
     };
   });
 
+  // Rainbow brush
+  const rainbowBtn = document.getElementById('btn-pic-rainbow');
+  if (rainbowBtn) {
+    rainbowBtn.onclick = () => {
+      isRainbow = !isRainbow;
+      rainbowBtn.classList.toggle('active', isRainbow);
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      AudioEngine.select();
+    };
+  }
+
+  // Undo
+  document.getElementById('btn-pic-undo').onclick = () => {
+    if (!undoDataUrl) return;
+    const canvas = document.querySelector('#screen-pic-draw canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = undoDataUrl;
+
+    const msg = { type: 'PIC_UNDO', dataUrl: undoDataUrl };
+    if (state.isHost) broadcast(msg);
+    else sendToHost(msg);
+
+    undoDataUrl = null;   // one undo per stroke
+    AudioEngine.click();
+  };
+
   // Clear
   document.getElementById('btn-pic-clear').onclick = () => {
     const canvas = document.querySelector('#screen-pic-draw canvas');
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    undoDataUrl = null;
 
     const msg = { type: 'PIC_CLEAR' };
     if (state.isHost) broadcast(msg);
@@ -303,6 +376,19 @@ export const handleClearCanvas = () => {
   }
 };
 
+/** Receive undo command on the view canvas */
+export const handleUndo = (data) => {
+  if (!viewCtx || !data.dataUrl) return;
+  const canvas = document.getElementById('pic-canvas-view');
+  if (!canvas) return;
+  const img = new Image();
+  img.onload = () => {
+    viewCtx.clearRect(0, 0, canvas.width, canvas.height);
+    viewCtx.drawImage(img, 0, 0);
+  };
+  img.src = data.dataUrl;
+};
+
 /** Add a chat message to the guess screen log */
 export const addChatMessage = (name, text, type = '') => {
   const log = document.getElementById('pic-chat-log');
@@ -310,7 +396,8 @@ export const addChatMessage = (name, text, type = '') => {
   const div = document.createElement('div');
   div.className = `chat-msg ${type}`;
   if (type === 'correct-msg') {
-    div.textContent = `✅ ${name} guessed it!`;
+    const fn = CORRECT_MSGS[Math.floor(Math.random() * CORRECT_MSGS.length)];
+    div.textContent = fn(name);
   } else if (type === 'system-msg') {
     div.textContent = text;
   } else {
@@ -326,26 +413,99 @@ export const updateHint = (hint) => {
   if (el) el.textContent = hint;
 };
 
+// ── Countdown 3-2-1 GO! ───────────────────────────────────────
+
+const showCountdown = (amDrawer, onDone) => {
+  const overlayId = amDrawer ? 'pic-draw-countdown' : null;
+  if (!overlayId) { onDone(); return; }   // guessers skip overlay
+
+  const overlay = document.getElementById(overlayId);
+  const numEl   = document.getElementById('pic-countdown-num');
+  if (!overlay || !numEl) { onDone(); return; }
+
+  overlay.classList.remove('hidden');
+  let count = 3;
+  numEl.textContent = count;
+
+  const tick = setInterval(() => {
+    count--;
+    if (count > 0) {
+      numEl.textContent = count;
+      // Restart animation by removing/re-adding the class
+      numEl.classList.remove('countdown-pop-anim');
+      void numEl.offsetWidth;  // force reflow
+      numEl.classList.add('countdown-pop-anim');
+      AudioEngine.tick();
+    } else {
+      clearInterval(tick);
+      numEl.textContent = 'GO!';
+      AudioEngine.correct();
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        onDone();
+      }, 700);
+    }
+  }, 900);
+
+  AudioEngine.tick();
+};
+
 // ── Timer ─────────────────────────────────────────────────────
+
+const RING_CIRCUMF = 113.1;  // 2π × 18
 
 const startTurnTimer = (amDrawer) => {
   if (turnTimer) clearInterval(turnTimer);
   let timeLeft = DRAW_TIME;
 
-  const timerEl = document.getElementById(amDrawer ? 'pic-draw-timer' : 'pic-guess-timer');
-  if (timerEl) timerEl.textContent = timeLeft;
+  const timerNumEl  = document.getElementById(amDrawer ? 'pic-draw-timer'      : 'pic-guess-timer');
+  const timerRingEl = document.getElementById(amDrawer ? 'pic-draw-timer-ring' : 'pic-guess-timer-ring');
+  const timerBarEl  = document.getElementById(amDrawer ? 'pic-draw-timer-bar'  : 'pic-guess-timer-bar');
+  const bigNumEl    = document.getElementById(amDrawer ? 'pic-bignum'          : 'pic-bignum-guess');
+
+  const updateTimerUI = () => {
+    if (timerNumEl) {
+      timerNumEl.textContent = timeLeft;
+      timerNumEl.classList.toggle('urgent', timeLeft <= 10);
+    }
+    if (timerRingEl) {
+      const offset = RING_CIRCUMF * (1 - timeLeft / DRAW_TIME);
+      timerRingEl.style.strokeDashoffset = offset;
+      timerRingEl.classList.toggle('urgent', timeLeft <= 10);
+    }
+    if (timerBarEl) {
+      timerBarEl.style.width = `${(timeLeft / DRAW_TIME) * 100}%`;
+      // Colour shifts: green → yellow → red as time drains
+      const pct = timeLeft / DRAW_TIME;
+      if (pct > 0.5)       timerBarEl.style.background = '#51cf66';
+      else if (pct > 0.25) timerBarEl.style.background = '#fcc419';
+      else                  timerBarEl.style.background = 'var(--coral)';
+    }
+    if (bigNumEl) {
+      if (timeLeft <= 5 && timeLeft > 0) {
+        bigNumEl.textContent = timeLeft;
+        bigNumEl.classList.remove('hidden');
+        bigNumEl.classList.add('active');
+      } else {
+        bigNumEl.classList.remove('active');
+        bigNumEl.classList.add('hidden');
+      }
+    }
+  };
+
+  // Set initial state immediately
+  updateTimerUI();
 
   turnTimer = setInterval(() => {
     timeLeft--;
-    if (timerEl) {
-      timerEl.textContent = timeLeft;
-      timerEl.parentElement.classList.toggle('urgent', timeLeft <= 10);
+    updateTimerUI();
+
+    // Tick sound for last 10 seconds
+    if (timeLeft <= 10 && timeLeft > 0) {
+      AudioEngine.tick();
     }
 
     // Reveal a letter hint at certain intervals (host broadcasts)
-    if (state.isHost && !amDrawer) {
-      // no-op; host handles reveal in its own timer
-    }
     if (state.isHost && amDrawer && state.picWord) {
       if (timeLeft === Math.floor(DRAW_TIME * 0.5)) {
         revealLetterHint(1);
@@ -369,9 +529,12 @@ const revealLetterHint = (count) => {
   const word = state.picWord;
   if (!word) return;
   const letters = word.split('').map((c, i) => ({ char: c, i })).filter(o => o.char !== ' ');
-  const toReveal = shuffleArray(letters).slice(0, count);
 
-  let hint = word.split('').map(c => c === ' ' ? '  ' : ' _ ').join('');
+  // For young kids (age5), always keep the first letter revealed
+  const alwaysReveal = state.difficulty === 'age5' ? letters.filter(o => o.i === 0) : [];
+  const candidates   = letters.filter(o => o.i !== 0);
+  const toReveal     = [...alwaysReveal, ...shuffleArray(candidates).slice(0, count)];
+
   const hintArr = word.split('').map(c => c === ' ' ? ' ' : '_');
   toReveal.forEach(o => { hintArr[o.i] = o.char; });
   const newHint = hintArr.map(c => c === ' ' ? '  ' : ` ${c} `).join('');
@@ -432,13 +595,6 @@ export const handleTurnEnd = (data) => {
     scoresDiv.appendChild(row);
   });
 
-  // Determine next drawer
-  if (state.isHost) {
-    setTimeout(() => {
-      advanceToNextTurn();
-    }, 4000);
-  }
-
   // Show who draws next
   const nextDrawerIdx = (state.picDrawerIndex + 1) % state.players.length;
   const nextRound = nextDrawerIdx === 0 ? state.picRound + 1 : state.picRound;
@@ -449,6 +605,32 @@ export const handleTurnEnd = (data) => {
     const nextName = state.players[nextDrawerIdx].name;
     document.getElementById('pic-reveal-next').textContent = `Next up: ${nextName} draws!`;
   }
+
+  // Animate the countdown bar so players know how long until next turn
+  if (state.isHost) {
+    animateRevealCountdown(4000, () => advanceToNextTurn());
+  }
+};
+
+/** Animates the reveal screen's "time until next turn" bar */
+const animateRevealCountdown = (durationMs, onDone) => {
+  const bar = document.getElementById('pic-reveal-countdown-bar');
+  if (!bar) { setTimeout(onDone, durationMs); return; }
+
+  const start = performance.now();
+  const step = (now) => {
+    const elapsed = now - start;
+    const pct = Math.max(0, 1 - elapsed / durationMs);
+    bar.style.width = `${pct * 100}%`;
+    if (elapsed < durationMs) {
+      requestAnimationFrame(step);
+    } else {
+      bar.style.width = '0%';
+      onDone();
+    }
+  };
+  bar.style.width = '100%';
+  requestAnimationFrame(step);
 };
 
 const advanceToNextTurn = () => {
@@ -518,6 +700,14 @@ export const showPictionaryWinner = (data) => {
 
 // ── Guess Processing (Host only) ──────────────────────────────
 
+/** Simple closeness check: first letter matches AND length within 2 */
+const isCloseGuess = (guess, word) => {
+  const g = guess.toLowerCase().trim();
+  const w = word.toLowerCase().trim();
+  if (g === w) return false;  // exact match handled separately
+  return g[0] === w[0] && Math.abs(g.length - w.length) <= 2;
+};
+
 export const processGuess = (data) => {
   if (!state.isHost) return;
 
@@ -548,6 +738,10 @@ export const processGuess = (data) => {
       if (state.picGuessedBy.length >= nonDrawers.length) {
         setTimeout(() => endTurn(true), 1500);
       }
+    } else if (!state.picGuessedBy.includes(playerId) && isCloseGuess(guess, state.picWord)) {
+      // Close guess — send a warm hint to the guesser via chat
+      broadcast({ type: 'PIC_CHAT', playerName: player.name, text: guess, close: true });
+      addChatMessage(player.name, guess, 'close-msg');
     } else {
       // Wrong — broadcast the guess to everyone (chat)
       broadcast({ type: 'PIC_CHAT', playerName: player.name, text: guess });
@@ -568,11 +762,22 @@ export const handleCorrectGuess = (data) => {
 
   addChatMessage(data.playerName, '', 'correct-msg');
 
-  // Update guessers bar on draw screen
+  // Mini confetti burst on correct guess
+  Confetti.start();
+  setTimeout(() => Confetti.stop(), 1500);
+
+  // Update guessers bar on draw screen — use pill badges
   const bar = document.getElementById('pic-guessers-list');
   if (bar) {
-    const names = state.picGuessedBy.map(id => state.players.find(p => p.id === id)?.name).filter(Boolean);
-    bar.textContent = names.length ? names.join(', ') : '—';
+    bar.innerHTML = '';
+    state.picGuessedBy.forEach(id => {
+      const name = state.players.find(p => p.id === id)?.name;
+      if (!name) return;
+      const badge = document.createElement('span');
+      badge.className = 'pic-guesser-badge';
+      badge.textContent = `✅ ${name}`;
+      bar.appendChild(badge);
+    });
   }
 
   // If I guessed correctly, disable my input

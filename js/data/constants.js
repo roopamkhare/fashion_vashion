@@ -51,16 +51,30 @@ export const TIMER_CIRCUMF     = 2 * Math.PI * 26;   // SVG circle r=26
 export const PICTIONARY_WORDS_EASY = [
   // Animals
   'cat', 'dog', 'fish', 'bird', 'frog', 'duck', 'pig', 'cow', 'bee', 'ant',
-  'snake', 'bear', 'lion', 'horse', 'bunny', 'mouse', 'shark', 'whale', 'owl', 'bat',
+  'bear', 'lion', 'horse', 'bunny', 'mouse', 'shark', 'whale', 'owl', 'turtle', 'chick',
   // Food
   'pizza', 'cake', 'apple', 'banana', 'cookie', 'ice cream', 'egg', 'candy', 'pie', 'bread',
-  'donut', 'cupcake', 'popcorn', 'cheese', 'grapes', 'cherry', 'corn', 'carrot', 'taco', 'hotdog',
+  'donut', 'cupcake', 'popcorn', 'cheese', 'grapes', 'cherry', 'corn', 'carrot', 'milk', 'burger',
   // Objects
   'sun', 'moon', 'star', 'tree', 'flower', 'house', 'car', 'boat', 'ball', 'hat',
-  'cloud', 'rain', 'rainbow', 'heart', 'book', 'chair', 'lamp', 'cup', 'key', 'shoe',
+  'cloud', 'rain', 'rainbow', 'heart', 'book', 'chair', 'lamp', 'cup', 'sock', 'shoe',
   // Actions / scenes
   'swim', 'jump', 'sleep', 'cry', 'smile', 'wave', 'dance', 'sing', 'run', 'fly',
+  // More kid-friendly extras
+  'nose', 'ear', 'hand', 'tooth', 'mud', 'bubble', 'slide', 'swing', 'kite', 'rocket',
 ];
+
+// Category lookup so the draw screen can show a hint to the drawer
+export const WORD_CATEGORY = (() => {
+  const map = {};
+  const animals = ['cat','dog','fish','bird','frog','duck','pig','cow','bee','ant','bear','lion','horse','bunny','mouse','shark','whale','owl','turtle','chick','penguin','octopus','dinosaur','butterfly','caterpillar','jellyfish','flamingo','parrot','chameleon','scorpion','hedgehog','dolphin','seahorse','gorilla','kangaroo'];
+  const food    = ['pizza','cake','apple','banana','cookie','ice cream','egg','candy','pie','bread','donut','cupcake','popcorn','cheese','grapes','cherry','corn','carrot','milk','burger','spaghetti','pancakes','watermelon','pineapple','croissant','burrito','sandwich','milkshake','gingerbread','lollipop','marshmallow','french fries','sushi'];
+  const actions = ['swim','jump','sleep','cry','smile','wave','dance','sing','run','fly'];
+  animals.forEach(w => { map[w] = '🐾 Animal'; });
+  food.forEach(w    => { map[w] = '🍕 Food'; });
+  actions.forEach(w => { map[w] = '🎬 Action'; });
+  return map; // anything not found → '🌈 Object'
+})();
 
 export const PICTIONARY_WORDS_HARD = [
   // Animals

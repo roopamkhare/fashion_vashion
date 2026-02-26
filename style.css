@@ -1062,19 +1062,137 @@ body {
   font-family: monospace;
 }
 
-.pic-timer-display {
+/* ---- Word category badge ---- */
+.pic-word-col {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 1.2rem;
-  font-weight: 900;
-  color: var(--text-dark);
-  background: var(--purple-light);
-  border-radius: 999px;
-  padding: 0.3rem 0.8rem;
+  gap: 0.2rem;
 }
 
-.pic-timer-display.urgent { color: var(--coral); background: #ffe0e0; }
+.pic-word-category {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  background: var(--mint-light);
+  border-radius: 999px;
+  padding: 0.1rem 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+/* ---- SVG ring timer ---- */
+.pic-timer-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.pic-timer-ring {
+  width: 52px;
+  height: 52px;
+  transform: rotate(-90deg);
+}
+
+.pic-timer-ring-bg {
+  fill: none;
+  stroke: var(--purple-light);
+  stroke-width: 4;
+}
+
+.pic-timer-ring-fill {
+  fill: none;
+  stroke: var(--purple);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 113.1;   /* 2π×18 */
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.9s linear, stroke 0.3s;
+}
+
+.pic-timer-ring-fill.urgent { stroke: var(--coral); }
+
+.pic-timer-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--text-dark);
+}
+
+.pic-timer-num.urgent { color: var(--coral); }
+
+/* ---- Draining progress bar ---- */
+.pic-timer-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: var(--purple-light);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.pic-timer-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--coral), var(--yellow), #51cf66);
+  background-size: 200% 100%;
+  border-radius: 999px;
+  transition: width 0.9s linear, background-position 0.9s linear;
+  transform-origin: left;
+}
+
+/* ---- Countdown overlay (3-2-1-GO!) ---- */
+.pic-countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.82);
+  border-radius: var(--radius-md);
+  z-index: 10;
+}
+
+.pic-countdown-num {
+  font-size: 6rem;
+  font-weight: 900;
+  color: var(--pink-dark);
+  animation: countdown-pop 0.6s var(--transition) both;
+  text-shadow: 0 4px 16px rgba(214,51,132,0.3);
+}
+
+@keyframes countdown-pop {
+  0%   { transform: scale(2.5); opacity: 0; }
+  60%  { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ---- Big pulsing number for last 5 seconds ---- */
+.pic-bignum-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 9;
+  font-size: 9rem;
+  font-weight: 900;
+  color: var(--coral);
+  opacity: 0;
+  text-shadow: 0 0 40px rgba(255,107,107,0.5);
+  animation: bignum-pulse 1s ease-in-out infinite;
+}
+
+.pic-bignum-overlay.active { opacity: 0.6; }
+
+@keyframes bignum-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.6; }
+  50%       { transform: scale(1.15); opacity: 0.9; }
+}
 
 /* Canvas Wrapper */
 .pic-canvas-wrap {
@@ -1160,6 +1278,30 @@ body {
   font-size: 0.85rem;
 }
 
+.pic-rainbow-btn {
+  padding: 0.3rem 0.55rem;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  background: var(--white);
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  line-height: 1;
+}
+
+.pic-rainbow-btn:hover { transform: scale(1.15); }
+
+.pic-rainbow-btn.active {
+  border-color: var(--pink);
+  box-shadow: 0 0 12px 3px rgba(255,133,194,0.5);
+  animation: rainbow-spin 1.5s linear infinite;
+}
+
+@keyframes rainbow-spin {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+
 .pic-guessers-bar {
   width: 100%;
   background: var(--white);
@@ -1172,6 +1314,42 @@ body {
 }
 
 .pic-guessers-label { font-weight: 700; }
+
+.pic-guessers-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+  margin-left: 0.4rem;
+}
+
+.pic-guesser-badge {
+  background: #d2f8d2;
+  color: #1a6b3a;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.82rem;
+  animation: pop-in 0.35s var(--transition) both;
+}
+
+/* ---- Reveal screen countdown bar ---- */
+.pic-reveal-countdown-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--purple-light);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.pic-reveal-countdown-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--purple);
+  border-radius: 999px;
+  transition: width 0.25s linear;
+}
 
 /* ============================================================
    PICTIONARY — GUESS SCREEN
@@ -1221,6 +1399,14 @@ body {
   font-size: 0.8rem;
 }
 
+.chat-msg.close-msg {
+  color: #7a4900;
+  font-weight: 700;
+  background: #fff3cd;
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.5rem;
+}
+
 .pic-guess-form {
   display: flex;
   gap: 0.4rem;
@@ -1257,7 +1443,14 @@ body {
   font-size: 3.5rem;
   display: block;
   margin-bottom: 0.4rem;
-  animation: pop-in 0.5s var(--transition) both;
+  animation: reveal-emoji-dance 0.6s var(--transition) both;
+}
+
+@keyframes reveal-emoji-dance {
+  0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60%  { transform: scale(1.3) rotate(10deg);  opacity: 1; }
+  80%  { transform: scale(0.9) rotate(-5deg); }
+  100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
 }
 
 .pic-reveal-word {

@@ -17,9 +17,10 @@ export const startThemeReveal = (theme) => {
   nameEl.textContent = theme.name;
   
   tagsEl.innerHTML = '';
-  theme.tags.forEach(tag => {
+  theme.tags.forEach((tag, i) => {
     const span = document.createElement('span');
     span.className = 'tag-pill';
+    span.style.animationDelay = `${i * 0.12}s`;
     span.textContent = tag;
     tagsEl.appendChild(span);
   });

@@ -5,15 +5,26 @@ import { Confetti } from '../components/confetti.js';
 import { broadcast } from '../utils/network.js';
 import { HighScores } from '../components/highScores.js';
 
+const WINNER_SUBTITLES = [
+  (name) => `${name} has amazing style! 🌟`,
+  (name) => `The fashion crown belongs to ${name}! 👑`,
+  (name) => `${name} is a total trendsetter! 💅`,
+  (name) => `Everyone's looking at ${name}! 🎀`,
+  (name) => `${name} just slayed the runway! 🔥`,
+];
+
 export const showWinner = () => {
   showScreen('screen-winner');
   AudioEngine.fanfare();
-  
+
   const sortedPlayers = [...state.players].sort((a, b) => (b.score + b.coins) - (a.score + a.coins));
   const winner = sortedPlayers[0];
   const totalScore = winner.score + winner.coins;
-  
+
   document.getElementById('winner-name').textContent = `${winner.name} Wins!`;
+
+  const subtitleFn = WINNER_SUBTITLES[Math.floor(Math.random() * WINNER_SUBTITLES.length)];
+  document.getElementById('winner-sub').textContent = subtitleFn(winner.name);
   
   const table = document.getElementById('score-table');
   table.innerHTML = `
@@ -28,6 +39,7 @@ export const showWinner = () => {
   sortedPlayers.forEach((p, i) => {
     const row = document.createElement('div');
     row.className = `st-row ${i === 0 ? 'winner-row' : ''}`;
+    row.style.animationDelay = `${i * 0.12}s`;
     row.innerHTML = `
       <div class="st-player">${i === 0 ? '👑 ' : ''}${p.name}</div>
       <div class="st-val">${p.score}</div>

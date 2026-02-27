@@ -583,8 +583,43 @@ body {
   transition: background 0.3s, border-color 0.3s;
 }
 
-.pip.correct { background: #3bc47e; border-color: #1a6b3a; }
-.pip.wrong   { background: var(--coral); border-color: #8b0000; }
+.pip.correct {
+  background: #3bc47e;
+  border-color: #1a6b3a;
+  animation: pip-pop 0.4s var(--transition) both;
+}
+.pip.wrong {
+  background: var(--coral);
+  border-color: #8b0000;
+  animation: shake 0.4s ease both;
+}
+
+@keyframes pip-pop {
+  0%   { transform: scale(0.5); }
+  70%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* Coin counter bounce when points are gained */
+.coin-pop {
+  animation: coin-bounce 0.45s var(--transition) both;
+}
+
+@keyframes coin-bounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.4); color: #3bc47e; }
+  100% { transform: scale(1); }
+}
+
+/* Question card slides in on each new question */
+.q-slide {
+  animation: q-slide-in 0.35s var(--transition) both;
+}
+
+@keyframes q-slide-in {
+  from { transform: translateX(30px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
 
 /* ============================================================
    WAITING SCREEN
@@ -673,7 +708,19 @@ body {
   transition: color 0.3s;
 }
 
-.budget-coins.tight { color: var(--coral); }
+.budget-coins.tight    { color: var(--coral); }
+.budget-coins.budget-low {
+  color: var(--coral);
+  animation: budget-shake 0.5s ease both;
+}
+
+@keyframes budget-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
 
 .theme-mini {
   font-size: 0.8rem;
@@ -792,6 +839,18 @@ body {
   color: #1a6b3a;
 }
 
+.item-match-pts {
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #1a6b3a;
+  background: #d2f8d2;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  margin-bottom: 0.2rem;
+  display: inline-block;
+  animation: pop-in 0.3s var(--transition) both;
+}
+
 /* BOUTIQUE FOOTER */
 .boutique-footer {
   background: var(--white);
@@ -842,6 +901,19 @@ body {
 
 .outfit-slot-emoji { font-size: 1.4rem; }
 .outfit-slot-name  { font-size: 0.62rem; font-weight: 700; margin-top: 0.15rem; }
+
+/* Outfit score preview banner */
+.outfit-score-preview {
+  background: linear-gradient(90deg, var(--mint-light), var(--yellow-light));
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1a6b3a;
+  text-align: center;
+  margin-bottom: 0.6rem;
+  animation: pop-in 0.3s var(--transition) both;
+}
 
 /* ============================================================
    WINNER SCREEN
